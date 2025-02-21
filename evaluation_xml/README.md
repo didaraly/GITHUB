@@ -1,0 +1,1 @@
+Paste a PAGE xml of evaluation data that you would like to use to evaluation the OCR in this directory

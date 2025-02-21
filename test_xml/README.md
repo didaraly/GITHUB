@@ -1,0 +1,1 @@
+Paste a PAGE xml of an OCR output that you would like to test in this directory
