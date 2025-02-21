@@ -142,4 +142,4 @@ def evaluate_from_zips(filter_region="MainZone"):
 
 
 if __name__ == "__main__":
-    evaluate_from_zips(filter_region="text")
+    evaluate_from_zips()
