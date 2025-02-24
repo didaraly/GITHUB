@@ -2,9 +2,37 @@ from zipfile import ZipFile
 import xml.etree.ElementTree as ET
 import os
 import re
-import fastwer
 import csv
 import statistics
+import numpy as np
+
+def error_rate(reference, hypothesis, approach="wer"):
+    """Whole function (except condition for wer versus cer) taken from
+    https://www.geeksforgeeks.org/assessing-nlp-model-effectiveness-wer-crt-and-sts/"""
+    if approach == "wer":
+        reference = reference.split()
+        hypothesis = hypothesis.split()
+    
+    # Initializing the matrix
+    d = np.zeros((len(reference)+1, len(hypothesis)+1), dtype=np.uint32)
+    for i in range(len(reference)+1):
+        d[i][0] = i
+    for j in range(len(hypothesis)+1):
+        d[0][j] = j
+
+    # Computing WER
+    for i in range(1, len(reference)+1):
+        for j in range(1, len(hypothesis)+1):
+            if reference[i-1] == hypothesis[j-1]:
+                substitution_cost = 0
+            else:
+                substitution_cost = 1
+            d[i][j] = min(d[i-1][j] + 1,                    # Deletion
+                          d[i][j-1] + 1,                    # Insertion
+                          d[i-1][j-1] + substitution_cost)  # Substitution
+    
+
+    return d[len(reference)][len(hypothesis)] / len(reference)
 
 def check_input(input_folder):
     """check input folder has only one file in it and that file is a zip - 
@@ -56,7 +84,7 @@ def lines_text_from_xml(xml_path, filter_region = "MainZone"):
     # if filter_region is None - just fetch all of the lines as a list
     if filter_region is None:        
         line_list = xml_list_to_text_list(root.findall(xml_string))
-
+        
     
     else:
         filter_region = 'structure {{type:{};}}'.format(filter_region)
@@ -78,14 +106,15 @@ def calc_cer_wer(eval_lines, test_lines):
     print("Calculating character error rate and word error rate")
     out = []
     cer_list = []
-    wer_list = []
+    wer_list = []    
     for index, eval_line in enumerate(eval_lines):
-        test_line = test_lines[index]
-        cer = fastwer.score_sent(test_line, eval_line, char_level=True)
-        wer = fastwer.score_sent(test_line, eval_line, char_level=False)
+        test_line = test_lines[index]        
+        cer = error_rate(eval_line, test_line, "cer")
+        wer = error_rate(eval_line, test_line)
         out.append({"test_line": test_line, "evaluation_line": eval_line, "cer": cer, "wer": wer})
         cer_list.append(cer)
-        wer_list.append(wer)
+        wer_list.append(wer)        
+    
     
     print("Mean cer for all lines is: {}".format(statistics.mean(cer_list)))
     print("Mean wer for all lines is: {}".format(statistics.mean(wer_list)))
@@ -142,4 +171,4 @@ def evaluate_from_zips(filter_region="MainZone"):
 
 
 if __name__ == "__main__":
-    evaluate_from_zips()
+    evaluate_from_zips(filter_region=None)
