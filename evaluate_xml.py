@@ -53,8 +53,16 @@ def check_input(input_folder):
 
 def unpack_xmlzips(zip_path, out="temp"):
     """Unpack a zip file into the temp folder"""
+    current_dir = os.getcwd()
     file_name = zip_path.split("/")[-1]
-    out_path = os.path.join(out, file_name)
+    out_path = os.path.join(current_dir, out, file_name)
+    
+    counter = 0
+    while os.path.exists(out_path):
+        counter = counter + 1        
+        new_file_name = file_name + str(counter)
+        out_path = os.path.join(current_dir, out, new_file_name)        
+
     print("Extracting {} into directory {}".format(file_name, out_path))
     
     # Unpack zip into specific temp directory
@@ -99,6 +107,7 @@ def lines_text_from_xml(xml_path, filter_region = "MainZone"):
                     for child in region:                    
                         line_list_extend = xml_list_to_text_list(child.findall(full_xml_string))
                         line_list.extend(line_list_extend)
+    print("_________")
     
     return line_list
 
@@ -115,10 +124,13 @@ def calc_cer_wer(eval_lines, test_lines):
         cer_list.append(cer)
         wer_list.append(wer)        
     
+    cer_mean = statistics.mean(cer_list)
+    wer_mean = statistics.mean(wer_list)
     
-    print("Mean cer for all lines is: {}".format(statistics.mean(cer_list)))
-    print("Mean wer for all lines is: {}".format(statistics.mean(wer_list)))
-    return out
+    print("Mean cer for all lines is: {}".format(cer_mean))
+    print("Mean wer for all lines is: {}".format(wer_mean))
+    print("_________")
+    return out, cer_mean, wer_mean
         
 
 def evaluate_from_zips(filter_region="MainZone"):
@@ -135,6 +147,9 @@ def evaluate_from_zips(filter_region="MainZone"):
 
     # Take evaluation as a base and use that for comparison with the test
     test_xmls = os.listdir(test_temp_path)
+    
+    cer_means = []
+    wer_means = []
 
     for file in os.listdir(evaluation_temp_path):
         # Check that we have corresponding xml file names in the two given zips - if we don't skip to the next
@@ -159,7 +174,11 @@ def evaluate_from_zips(filter_region="MainZone"):
             test_lines = lines_text_from_xml(test_path, filter_region=filter_region)
 
             # Compare the lines
-            dict_list_cer = calc_cer_wer(eval_lines, test_lines)
+            dict_list_cer, cer_mean, wer_mean = calc_cer_wer(eval_lines, test_lines)
+            
+            # Add the means to a list - so that we can calculate a mean over pages
+            cer_means.append(cer_mean)
+            wer_means.append(wer_mean)
 
             # Output a csv
             field_names = dict_list_cer[0].keys()
@@ -167,6 +186,11 @@ def evaluate_from_zips(filter_region="MainZone"):
                 writer = csv.DictWriter(csvfile, fieldnames=field_names)
                 writer.writeheader()
                 writer.writerows(dict_list_cer)
+    
+    
+    print("Mean cer for all lines on all pages is: {}".format(statistics.mean(cer_means)))
+    print("Mean wer for all lines on all pages is: {}".format(statistics.mean(wer_means)))
+    print("_________")
 
 
 
