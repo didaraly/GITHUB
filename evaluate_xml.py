@@ -78,6 +78,12 @@ def xml_list_to_text_list(root_list):
         out_list.append(child.text)
     return out_list
 
+def normalize(s):
+    if not s:
+        return ""
+    s = re.sub(r"[ \xa0\t]+", " ", s)
+    return s
+
 def lines_text_from_xml(xml_path, filter_region = "MainZone"):
     """parses xml to return a list of strings for comparison"""
     print("Parsing lines from xmls")
@@ -107,9 +113,11 @@ def lines_text_from_xml(xml_path, filter_region = "MainZone"):
                     for child in region:                    
                         line_list_extend = xml_list_to_text_list(child.findall(full_xml_string))
                         line_list.extend(line_list_extend)
+    print("normalizing whitespace...")
+    line_list = [normalize(line) for line in line_list]
     print("_________")
-    
     return line_list
+
 
 def calc_cer_wer(eval_lines, test_lines):
     print("Calculating character error rate and word error rate")
@@ -132,6 +140,7 @@ def calc_cer_wer(eval_lines, test_lines):
     print("_________")
     return out, cer_mean, wer_mean
         
+
 
 def evaluate_from_zips(filter_region="MainZone"):
     """Assumes only one zip file - will only take the first that appears on a listdir"""
