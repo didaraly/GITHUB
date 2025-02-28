@@ -12,9 +12,10 @@ def error_rate(reference, hypothesis, approach="wer"):
     if approach == "wer":
         reference = reference.split()
         hypothesis = hypothesis.split()
-        if len(reference) == 0 and len(hypothesis) == 0:
-            reference = [' ']
-            hypothesis = [' ']
+    
+    # Quick fix for empty input data - 0 either string or list is empty
+    if len(reference) == 0 or len(hypothesis) == 0:
+        return 0
     
     # Initializing the matrix
     d = np.zeros((len(reference)+1, len(hypothesis)+1), dtype=np.uint32)
@@ -135,12 +136,21 @@ def calc_cer_wer(eval_lines, test_lines):
         cer_list.append(cer)
         wer_list.append(wer)        
     
-    cer_mean = statistics.mean(cer_list)
-    wer_mean = statistics.mean(wer_list)
-    
+    if len(cer_list) == 0:
+        cer_mean = 0
+    else:
+        cer_mean = statistics.mean(cer_list)
+    if len(cer_list) == 0:
+        wer_mean = 0
+    else:
+        wer_mean = statistics.mean(wer_list)
+      
+        
     print("Mean cer for all lines is: {}".format(cer_mean))
     print("Mean wer for all lines is: {}".format(wer_mean))
     print("_________")
+
+
     return out, cer_mean, wer_mean
         
 
@@ -177,8 +187,8 @@ def evaluate_from_zips(filter_region="MainZone"):
             eval_path = os.path.join(evaluation_temp_path, file)
             test_path = os.path.join(test_temp_path, file)
 
-            print(eval_path)
-            print(test_path)
+            # print(eval_path)
+            # print(test_path)
 
             # Get the lines
 
@@ -188,20 +198,38 @@ def evaluate_from_zips(filter_region="MainZone"):
             # Compare the lines
             dict_list_cer, cer_mean, wer_mean = calc_cer_wer(eval_lines, test_lines)
             
-            # Add the means to a list - so that we can calculate a mean over pages
-            cer_means.append(cer_mean)
-            wer_means.append(wer_mean)
+            if len(dict_list_cer) == 0:
+                print("No data for this file - skipping csv creation".format(file))
 
-            # Output a csv
-            field_names = dict_list_cer[0].keys()
-            with open('out/eval{}.csv'.format(file), 'w', encoding='utf-8-sig') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=field_names)
-                writer.writeheader()
-                writer.writerows(dict_list_cer)
+            # Add the means to a list - so that we can calculate a mean over pages
+            else:
+                cer_means.append(cer_mean)
+                wer_means.append(wer_mean)
+
+                # Output a csv
+                field_names = dict_list_cer[0].keys()
+                with open('out/eval{}.csv'.format(file), 'w', encoding='utf-8-sig') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=field_names)
+                    writer.writeheader()
+                    writer.writerows(dict_list_cer)
     
     
     print("Mean cer for all lines on all pages is: {}".format(statistics.mean(cer_means)))
     print("Mean wer for all lines on all pages is: {}".format(statistics.mean(wer_means)))
+    print("_________")
+
+        # Calculate means by excluding values above 1
+    new_cer_list = []
+    new_wer_list = []
+    for cer_mean in cer_means:
+        if cer_mean < 1:
+            new_cer_list.append(cer_mean)
+    for wer_mean in wer_means:
+        if wer_mean < 1:
+            new_wer_list.append(wer_mean)
+
+    print("Mean cer for all lines on all pages excluding values above 1 is: {}".format(statistics.mean(new_cer_list)))
+    print("Mean wer for all lines on all pages excluding values above 1 is: {}".format(statistics.mean(new_wer_list)))
     print("_________")
 
 
