@@ -12,6 +12,9 @@ def error_rate(reference, hypothesis, approach="wer"):
     if approach == "wer":
         reference = reference.split()
         hypothesis = hypothesis.split()
+        if len(reference) == 0 and len(hypothesis) == 0:
+            reference = [' ']
+            hypothesis = [' ']
     
     # Initializing the matrix
     d = np.zeros((len(reference)+1, len(hypothesis)+1), dtype=np.uint32)
@@ -31,7 +34,7 @@ def error_rate(reference, hypothesis, approach="wer"):
                           d[i][j-1] + 1,                    # Insertion
                           d[i-1][j-1] + substitution_cost)  # Substitution
     
-
+    
     return d[len(reference)][len(hypothesis)] / len(reference)
 
 def check_input(input_folder):
@@ -80,7 +83,7 @@ def xml_list_to_text_list(root_list):
 
 def normalize(s):
     if not s:
-        return ""
+        return " "
     s = re.sub(r"[ \xa0\t]+", " ", s)
     return s
 
@@ -115,6 +118,7 @@ def lines_text_from_xml(xml_path, filter_region = "MainZone"):
                         line_list.extend(line_list_extend)
     print("normalizing whitespace...")
     line_list = [normalize(line) for line in line_list]
+    print(line_list)
     print("_________")
     return line_list
 
