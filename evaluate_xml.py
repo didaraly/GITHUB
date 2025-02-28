@@ -118,7 +118,6 @@ def lines_text_from_xml(xml_path, filter_region = "MainZone"):
                         line_list.extend(line_list_extend)
     print("normalizing whitespace...")
     line_list = [normalize(line) for line in line_list]
-    print(line_list)
     print("_________")
     return line_list
 
